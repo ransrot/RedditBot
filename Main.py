@@ -1,8 +1,8 @@
 import praw
 import requests
 import random
-import threading
 import sqlite3
+import time
 
 from functools import wraps
 from random_user_agent.user_agent import UserAgent
@@ -15,7 +15,7 @@ client_secret = ""  # your client secret for reddit
 reddit_username = "" # your reddit username
 reddit_password = "" # your reddit password
 
-title_of_message = "Help with homework" # title of the message you want to send
+title_of_message = "" # title of the message you want to send
 message = "" # the message to send to the reddit user
 file = "" # The file with the list of subreddits you want to check
 file2 = "" # The file with the keywords you would like to check in a post
@@ -31,20 +31,6 @@ def file_exception_handler(func):
 			print("[!] Invalid file name or file not in the same directory as the script.")
 			exit()
 	return inner
-
-class RandomUserAgent:
-	def __init__(self):
-		self.software_names = [SoftwareName.CHROME.value]
-		self.os = [OperatingSystem.WINDOWS.value, OperatingSystem.LINUX.value]
-		self.user_agent_rotator = UserAgent(software_names=self.software_names, operating_system=self.os, limit=100)
-		self.user_agents = self.user_agent_rotator.get_user_agents()
-
-	def get_random_number(self):
-		return random.randint(0, 99)
-
-	def get_random_user_agents(self):
-		return self.user_agents[self.get_random_number()]["user_agent"]
-
 
 class DataBase:
 	def __init__(self):
@@ -67,6 +53,18 @@ class DataBase:
 
 		return False
 
+class RandomUserAgent:
+	def __init__(self):
+		self.software_names = [SoftwareName.CHROME.value]
+		self.os = [OperatingSystem.WINDOWS.value, OperatingSystem.LINUX.value]
+		self.user_agent_rotator = UserAgent(software_names=self.software_names, operating_system=self.os, limit=100)
+		self.user_agents = self.user_agent_rotator.get_user_agents()
+
+	def get_random_number(self):
+		return random.randint(0, 99)
+
+	def get_random_user_agents(self):
+		return self.user_agents[self.get_random_number()]["user_agent"]
 
 class RedditBot:
 	def __init__(self):
@@ -114,9 +112,14 @@ class RedditBot:
 		return requests.head(f"{self.subreddit_string(sub_reddit)}", headers={"User-Agent": f"{user_agent}"}).status_code == 200
 
 	def reddit_bot_main(self):
-		self.get_subreddits()
-		threading.Timer(time_check, self.reddit_bot_main).start()
-		print(f"[+] Waiting: {str(time_check / 60)} minutes.")
+		try:
+			while True:
+				self.get_subreddits()
+				print(f"[+] Waiting: {str(time_check / 60)} minutes.")
+				time.sleep(time_check)
+		except KeyboardInterrupt:
+			print("\n[!] Exiting")
+			exit()
 
 	def get_subreddits(self): 
 
@@ -161,5 +164,6 @@ if __name__ == '__main__':
 	reddit.data_base.create_table()
 	
 	reddit.read_file(file) 
-	reddit.get_keywords(file2) 
+	reddit.get_keywords(file2)
+
 	reddit.reddit_bot_main()
