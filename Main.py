@@ -26,7 +26,7 @@ def file_exception_handler(func):
 
 	def inner(*args):
 		try:
-			func(*args)
+			return func(*args)
 		except FileNotFoundError:
 			print("[!] Invalid file name or file not in the same directory as the script.")
 			exit()
